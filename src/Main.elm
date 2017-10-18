@@ -2,7 +2,7 @@ module Main exposing (..)
 
 import Html exposing (Html, text, div, img)
 import Html.Attributes exposing (..)
-import Html.Events exposing (onClick)
+import Html.Events exposing (onClick, onInput)
 import List.Extra as Lex exposing (..)
 import Debug exposing (..)
 
@@ -17,13 +17,17 @@ type alias ClickableWord =
 
 
 type alias Model =
-    { text: List ClickableWord
+    { clickableText: List ClickableWord
+    , textEntered: Bool
+    , inputText: String
     }
 
 
 initModel: Model
 initModel = 
-    { text = textToClickableWords dummyText
+    { clickableText = []
+    , textEntered = False
+    , inputText = ""
     }
 
 init : ( Model, Cmd Msg )
@@ -103,6 +107,8 @@ hasPosition int word =
 
 type Msg
     = ToggleWord ClickableWord
+    | MakeTextClickable String 
+    | UpdateInputText String 
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -110,13 +116,27 @@ update msg model =
     case msg of 
         ToggleWord word -> 
             let 
-                newText = Lex.updateAt (word.position - 1) eraseOrBringBack model.text
+                newText = Lex.updateAt (word.position - 1) eraseOrBringBack model.clickableText
             in 
                 case newText of 
                     Just text -> 
-                        ({model | text = text}, Cmd.none) 
+                        ({model | clickableText = text}, Cmd.none) 
                     Nothing -> 
                         Debug.crash "You're trying to toggle a word that doesn't exist."
+
+        MakeTextClickable text -> 
+
+            let 
+                clickableText = textToClickableWords model.inputText 
+            in 
+                ({ model 
+                    | clickableText = clickableText
+                    , textEntered = True
+                    }
+                , Cmd.none)
+
+        UpdateInputText text -> 
+            ({model | inputText = text}, Cmd.none)
 
 
 
@@ -127,12 +147,33 @@ myStyles: Html.Attribute Msg
 myStyles = 
     style 
         [ ("font-family", "Georgia")
+        , ("font-size", "20px")
         ]
 
 view : Model -> Html Msg
 view model =
+    case model.textEntered of 
+        False -> 
+            enterYourTextScreen model
+        True -> 
+            div [myStyles]
+                (List.map displayClickableWord model.clickableText) 
+
+
+enterYourTextScreen: Model -> Html Msg 
+enterYourTextScreen model = 
     div [myStyles]
-        ( List.map displayClickableWord model.text )
+        [ Html.br [] [] , Html.br [] []
+        , Html.textarea 
+            [ placeholder "Enter your text here"
+            , onInput UpdateInputText
+            , style [("width", "500px"), ("height", "200px") ]
+            ] []
+        , Html.br [] [] , Html.br [] [] 
+        , Html.button [ onClick (MakeTextClickable model.inputText)] [Html.text "Let's erase stuff!"]
+        ]
+
+
 
 displayClickableWord: ClickableWord -> Html Msg 
 displayClickableWord word = 
