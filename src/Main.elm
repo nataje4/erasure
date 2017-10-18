@@ -109,6 +109,7 @@ type Msg
     = ToggleWord ClickableWord
     | MakeTextClickable String 
     | UpdateInputText String 
+    | GoBackToTextEntry
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -138,6 +139,9 @@ update msg model =
         UpdateInputText text -> 
             ({model | inputText = text}, Cmd.none)
 
+        GoBackToTextEntry -> 
+            ({model | textEntered = False}, Cmd.none)
+
 
 
 
@@ -157,7 +161,22 @@ view model =
             enterYourTextScreen model
         True -> 
             div [myStyles]
-                (List.map displayClickableWord model.clickableText) 
+                [ 
+                    div 
+                        [ 
+                            style 
+                                [ ("width", "75%")
+                                , ("display", "inline-block")
+                                , ("margin", "auto") 
+                                , ("margin-top", "4em")
+                                , ("margin-bottom", "1em")
+                                ] 
+                        ] 
+                        (List.map displayClickableWord model.clickableText) 
+                    , Html.br [] []
+                    , Html.button [onClick GoBackToTextEntry] [Html.text "Enter different text"]
+
+                ] 
 
 
 enterYourTextScreen: Model -> Html Msg 
