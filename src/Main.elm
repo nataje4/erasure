@@ -1,10 +1,10 @@
 module Main exposing (..)
 
 import Html exposing (Html, text, div, img)
-import Html.Attributes exposing (..)
+import Html.Attributes as Hattr exposing (..)
 import Html.Events exposing (onClick, onInput)
 import List.Extra as Lex exposing (..)
-import Debug exposing (..)
+
 
 
 ---- MODEL ----
@@ -35,45 +35,6 @@ init =
     ( initModel, Cmd.none )
 
 
-dummyWords: List ClickableWord
-dummyWords = 
-    [ ClickableWord "TEST" False 1
-    , ClickableWord "TEST" False 2
-    , ClickableWord "TEST" False 3
-    , ClickableWord "TEST" False 4
-    , ClickableWord "TEST" False 5
-    ]
-
-dummyText: String 
-dummyText = 
-    """
-    Lorem ipsum dolor sit amet, pro mandamus deterruisset ut, quo exerci audiam eu, 
-    ad numquam lobortis duo. Est te erant causae detracto, graece mollis mea at, 
-    laudem quaeque mei no. Et alterum impedit vituperata pri, per cu solet atomorum. 
-    Nemore repudiare ad his, ipsum dolore ad eam, te audiam latine phaedrum pro. Eruditi 
-    vivendo est an, choro labore voluptatibus ut qui. Cu legimus adversarium has, nulla 
-    postulant usu et. In melius abhorreant cum.
-
-    Ei mei malorum honestatis instructior, ne omnes quidam pro. Soluta lobortis deterruisset
-    sed no, ius illud populo singulis eu. Vim modus soleat et, aperiam intellegam contentiones 
-    at his, legendos torquatos nam id. Eu sit omnes ponderum disputando, vix epicurei suavitate te, 
-    agam nibh omittam vim no. Vix mollis aliquip oporteat in.   
-
-    Harum congue cu sea, eum in integre phaedrum repudiandae. Mei populo iisque commodo ei, vel
-    te libris prompta signiferumque, errem assentior democritum eam ad. Justo expetendis pri ad, 
-    sumo aperiri mentitum vix eu. Sumo veri vel ei, his libris commodo ea. Ius agam natum interpretaris 
-    te, pro at saepe deserunt adipiscing, has quando fastidii te. Quo at probatus invenire, his scripta 
-    phaedrum volutpat te, et quod diceret forensibus per.  
-
-    In esse vide facilis nam, ex pri ubique noster impedit, mei te dicat falli blandit. Qui id dicant 
-    voluptua. Feugait splendide intellegat quo in, qui ea harum veniam, idque mazim utamur has ea. Ubique 
-    delectus an vix, velit tantas vis ei. Ei laudem intellegat vis, ne duis ludus dignissim mea. Solet 
-    mollis regione ad vel.   
-
-    Summo intellegat mea id. No usu vidit ignota elaboraret. Per labitur euismod assentior et, mutat 
-    libris feugiat cu pri. Usu et mutat eripuit fabulas, singulis lobortis intellegam pro ex. Vel an stet 
-    utamur instructior. Odio porro his no, ea has detracto antiopam.
-    """
 
 textToClickableWords: String -> List ClickableWord
 textToClickableWords inputText = 
@@ -147,12 +108,16 @@ update msg model =
 
 ---- VIEW ----
 
-myStyles: Html.Attribute Msg 
+myStyles: List (Html.Attribute Msg) 
 myStyles = 
-    style 
-        [ ("font-family", "Georgia")
-        , ("font-size", "20px")
-        ]
+    List.singleton 
+        (style 
+            [ ("font-family", "Georgia")
+            , ("font-size", "20px")
+            , ("display", "inline-block")
+            , ("margin", "auto")
+            ] )
+
 
 view : Model -> Html Msg
 view model =
@@ -160,7 +125,7 @@ view model =
         False -> 
             enterYourTextScreen model
         True -> 
-            div [myStyles]
+            div myStyles
                 [ 
                     div 
                         [ 
@@ -168,28 +133,39 @@ view model =
                                 [ ("width", "75%")
                                 , ("display", "inline-block")
                                 , ("margin", "auto") 
-                                , ("margin-top", "4em")
+                                , ("margin-top", "2em")
                                 , ("margin-bottom", "1em")
                                 ] 
                         ] 
                         (List.map displayClickableWord model.clickableText) 
                     , Html.br [] []
-                    , Html.button [onClick GoBackToTextEntry] [Html.text "Enter different text"]
+                    , Html.button (onClick GoBackToTextEntry :: appButtonStyle) [Html.text "Enter different text"]
 
                 ] 
 
+appButtonStyle: List (Html.Attribute Msg)
+appButtonStyle = 
+    style
+        [ ("padding", "0 5px") 
+        , ("border-radius", "0") 
+        , ("border-width", "0") 
+        , ("color", "black") 
+        , ("background", "transparent") 
+        , ("font-family", "'Arial', sans-serif") 
+        ]
+    |> List.singleton
 
 enterYourTextScreen: Model -> Html Msg 
 enterYourTextScreen model = 
-    div [myStyles]
+    div (myStyles)
         [ Html.br [] [] , Html.br [] []
         , Html.textarea 
             [ placeholder "Enter your text here"
             , onInput UpdateInputText
-            , style [("width", "500px"), ("height", "200px") ]
+            , style [("width", "800px"), ("height", "200px") ]
             ] []
         , Html.br [] [] , Html.br [] [] 
-        , Html.button [ onClick (MakeTextClickable model.inputText)] [Html.text "Let's erase stuff!"]
+        , Html.button ( onClick (MakeTextClickable model.inputText) :: appButtonStyle) [Html.text "Let's erase stuff!"]
         ]
 
 
