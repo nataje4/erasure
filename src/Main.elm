@@ -111,6 +111,26 @@ update msg model =
         Randomize int -> 
             model ! [ ]
 
+randomErasure: Int -> List ClickableWord -> String-- List ClickableWord
+randomErasure percent words = 
+    let 
+        desiredAmountErased: Int 
+        desiredAmountErased = (List.length words) * percent // 100 -- Note use of integer division here 
+
+        currentAmountErased: Int 
+        currentAmountErased = 
+            List.filter (.erased) words
+                |> List.length
+
+    in 
+        case (compare desiredAmountErased currentAmountErased) of 
+            LT -> 
+                "less"
+            EQ -> 
+                "equal"
+            GT -> 
+                "greater"
+
 
 
 ---- VIEW ----
@@ -147,6 +167,8 @@ view model =
                         (List.map displayClickableWord model.clickableText) 
                     , Html.br [] []
                     , Html.button (onClick GoBackToTextEntry :: appButtonStyle) [Html.text "Enter different text"]
+                    , Html.br [] []
+                    , Html.text (randomErasure model.percentRandom model.clickableText)
 
                 ] 
 
