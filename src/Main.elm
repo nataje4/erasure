@@ -4,6 +4,8 @@ import Html exposing (Html, text, div, img)
 import Html.Attributes as Hattr exposing (..)
 import Html.Events exposing (onClick, onInput)
 import List.Extra as Lex exposing (..)
+import Random.Extra as Rex exposing (..)
+
 
 
 
@@ -20,6 +22,7 @@ type alias Model =
     { clickableText: List ClickableWord
     , textEntered: Bool
     , inputText: String
+    , percentRandom: Int
     }
 
 
@@ -28,6 +31,7 @@ initModel =
     { clickableText = []
     , textEntered = False
     , inputText = ""
+    , percentRandom = 50
     }
 
 init : ( Model, Cmd Msg )
@@ -71,6 +75,7 @@ type Msg
     | MakeTextClickable String 
     | UpdateInputText String 
     | GoBackToTextEntry
+    | Randomize Int
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -103,6 +108,8 @@ update msg model =
         GoBackToTextEntry -> 
             ({model | textEntered = False}, Cmd.none)
 
+        Randomize int -> 
+            model ! [ ]
 
 
 
@@ -151,7 +158,9 @@ appButtonStyle =
         , ("border-width", "0") 
         , ("color", "black") 
         , ("background", "transparent") 
-        , ("font-family", "'Arial', sans-serif") 
+        , ("font-family", "'Arial', sans-serif")
+        , ("padding-left", "6em")
+        , ("padding-right", "6em")  
         ]
     |> List.singleton
 
@@ -166,6 +175,7 @@ enterYourTextScreen model =
             ] []
         , Html.br [] [] , Html.br [] [] 
         , Html.button ( onClick (MakeTextClickable model.inputText) :: appButtonStyle) [Html.text "Let's erase stuff!"]
+        , Html.button ( onClick (Randomize model.percentRandom) :: appButtonStyle) [Html.text "Randomize!"]
         ]
 
 
