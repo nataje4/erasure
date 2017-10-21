@@ -35,7 +35,7 @@ initModel =
     { clickableText = []
     , textEntered = False
     , inputText = ""
-    , percentRandom = 50
+    , percentRandom = 80
     , seed = Random.initialSeed 42
     }
 
@@ -120,7 +120,7 @@ update msg model =
             ((randomErasure model), Cmd.none)
 
 desiredAmountErased: Model -> Int 
-desiredAmountErased model = (totalNumberOfWords model) * model.percentRandom // 100 -- Note use of integer division here 
+desiredAmountErased model = ((totalNumberOfWords model) * model.percentRandom)  // 100 -- Note use of integer division here 
 
 currentErasedWords: Model -> List ClickableWord 
 currentErasedWords model = List.filter (.erased) model.clickableText
@@ -280,6 +280,7 @@ view model =
                     , Html.button (onClick GoBackToTextEntry :: appButtonStyle) [Html.text "Enter different text"]
                     , Html.br [] []
                     , Html.button ( onClick (Randomize) :: appButtonStyle) [Html.text "Randomize!"]
+                    , Html.text (toString (desiredAmountErased  model))
                     
 
                 ] 
