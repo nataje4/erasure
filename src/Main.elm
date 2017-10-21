@@ -5,6 +5,8 @@ import Html.Attributes as Hattr exposing (..)
 import Html.Events exposing (onClick, onInput)
 import List.Extra as Lex exposing (..)
 import Random.Extra as Rex exposing (..)
+import Random exposing (..)
+import Debug exposing (crash)
 
 
 
@@ -23,6 +25,7 @@ type alias Model =
     , textEntered: Bool
     , inputText: String
     , percentRandom: Int
+    , seed: Random.Seed
     }
 
 
@@ -32,6 +35,7 @@ initModel =
     , textEntered = False
     , inputText = ""
     , percentRandom = 50
+    , seed = Random.initialSeed 42
     }
 
 init : ( Model, Cmd Msg )
@@ -52,6 +56,9 @@ textToClickableWords inputText =
 createWord: String -> Int -> ClickableWord
 createWord string int = 
     ClickableWord string False int 
+
+--TODO create seed based on time in init 
+
 
 ---- UPDATE ----
 
@@ -75,7 +82,7 @@ type Msg
     | MakeTextClickable String 
     | UpdateInputText String 
     | GoBackToTextEntry
-    | Randomize Int
+    | Randomize
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -108,30 +115,107 @@ update msg model =
         GoBackToTextEntry -> 
             ({model | textEntered = False}, Cmd.none)
 
-        Randomize int -> 
+        Randomize -> 
             model ! [ ]
 
-randomErasure: Int -> List ClickableWord -> String-- List ClickableWord
-randomErasure percent words = 
+randomErasure: Model -> Model
+randomErasure model = 
     let 
+        words: List ClickableWord
+        words = model.clickableText
+
+        percent: Int
+        percent = model.percentRandom
+
         desiredAmountErased: Int 
         desiredAmountErased = (List.length words) * percent // 100 -- Note use of integer division here 
 
+        currentErasedWords: List ClickableWord 
+        currentErasedWords = List.filter (.erased) words
+
         currentAmountErased: Int 
-        currentAmountErased = 
-            List.filter (.erased) words
-                |> List.length
+        currentAmountErased = List.length currentErasedWords
+
+        totalNumberOfWords: Int 
+        totalNumberOfWords = List.length words 
+
+        randomIndex_: Int
+        randomIndex_ = randomIndexAndSeed model |> Tuple.first
 
     in 
         case (compare desiredAmountErased currentAmountErased) of 
             LT -> 
-                "less"
+                let 
+                    eraseAWord = eraseAtIndex randomIndex_ words
+                in 
+                    case eraseAWord of 
+                        Just newWords -> 
+                            { model | clickableText = newWords }
+                        _ -> 
+                            model --DEBUG?
             EQ -> 
-                "equal"
+                model
             GT -> 
-                "greater"
+                let 
+                    bringBackAWord = eraseAtIndex randomIndex_ words
+                in 
+                    case bringBackAWord of 
+                        Just newWords -> 
+                            { model | clickableText = newWords }
+                        _ -> 
+                            model --DEBUG?
+
+randomIndexAndSeed: Model -> (Int, Seed) 
+randomIndexAndSeed model = 
+    let 
+        totalNumberOfWords: Int 
+        totalNumberOfWords = List.length model.clickableText
+
+        seed: Random.Seed
+        seed = model.seed
+    in 
+        Random.step (Random.int 0 (totalNumberOfWords-1)) seed
+
+eraseAtIndex: Int -> List ClickableWord -> Maybe (List ClickableWord)
+eraseAtIndex index words = 
+    let 
+        wordAtIndex = Lex.getAt index words
+
+    in 
+        case wordAtIndex of  
+            Just word -> 
+                case word.erased of 
+                    True -> 
+                        Just words 
+                    False -> 
+                        Lex.setAt index (eraseOrBringBack word) words
+            Nothing -> 
+                Debug.crash "No word at that index."
+
+bringBackAtIndex: Int -> List ClickableWord -> Maybe (List ClickableWord)
+bringBackAtIndex index words = 
+    let 
+        wordAtIndex = Lex.getAt index words
+
+    in 
+        case wordAtIndex of  
+            Just word -> 
+                case word.erased of 
+                    True -> 
+                        Lex.setAt index (eraseOrBringBack word) words
+                    False -> 
+                        Just words
+            Nothing -> 
+                Debug.crash "No word at that index."
 
 
+isErased: ClickableWord -> Bool 
+isErased word = 
+    word.erased == True
+
+isNotErased: ClickableWord -> Bool 
+isNotErased word = 
+    word.erased == False
 
 ---- VIEW ----
 
@@ -168,7 +252,7 @@ view model =
                     , Html.br [] []
                     , Html.button (onClick GoBackToTextEntry :: appButtonStyle) [Html.text "Enter different text"]
                     , Html.br [] []
-                    , Html.text (randomErasure model.percentRandom model.clickableText)
+                    , Html.text <| toString <| (randomErasure model)
 
                 ] 
 
@@ -197,7 +281,7 @@ enterYourTextScreen model =
             ] []
         , Html.br [] [] , Html.br [] [] 
         , Html.button ( onClick (MakeTextClickable model.inputText) :: appButtonStyle) [Html.text "Let's erase stuff!"]
-        , Html.button ( onClick (Randomize model.percentRandom) :: appButtonStyle) [Html.text "Randomize!"]
+        , Html.button ( onClick (Randomize) :: appButtonStyle) [Html.text "Randomize!"]
         ]
 
 
