@@ -35,7 +35,7 @@ initModel =
     { clickableText = []
     , textEntered = False
     , inputText = ""
-    , percentRandom = 80
+    , percentRandom = 90
     , seed = Random.initialSeed 42
     }
 
@@ -84,6 +84,7 @@ type Msg
     | UpdateInputText String 
     | GoBackToTextEntry
     | Randomize
+    | UpdatePercentRandom String
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -118,6 +119,9 @@ update msg model =
 
         Randomize -> 
             ((randomErasure model), Cmd.none)
+
+        UpdatePercentRandom string -> 
+            ({model | percentRandom = (Result.withDefault 0 (String.toInt string)) }, Cmd.none)
 
 desiredAmountErased: Model -> Int 
 desiredAmountErased model = ((totalNumberOfWords model) * model.percentRandom)  // 100 -- Note use of integer division here 
@@ -278,9 +282,9 @@ view model =
                         (List.map displayClickableWord model.clickableText) 
                     , Html.br [] []
                     , Html.button (onClick GoBackToTextEntry :: appButtonStyle) [Html.text "Enter different text"]
-                    , Html.br [] []
+                    , Html.br [][]
+                    , Html.text "Erase ", percentRandomInput, Html.text "% of these words"
                     , Html.button ( onClick (Randomize) :: appButtonStyle) [Html.text "Randomize!"]
-                    , Html.text (toString (desiredAmountErased  model))
                     
 
                 ] 
@@ -295,7 +299,9 @@ appButtonStyle =
         , ("background", "transparent") 
         , ("font-family", "'Arial', sans-serif")
         , ("padding-left", "6em")
-        , ("padding-right", "6em")  
+        , ("padding-right", "6em")
+        , ("margin-bottom", "30px")
+        , ("display", "inline-block")  
         ]
     |> List.singleton
 
@@ -313,6 +319,16 @@ enterYourTextScreen model =
 
         ]
 
+percentRandomInput: Html Msg
+percentRandomInput = 
+      div []
+    [ Html.input
+      [ type_ "text"
+      , size 3
+      , onInput UpdatePercentRandom
+      , style [("display", "inline-block")]
+      ] []
+    ]
 
 
 displayClickableWord: ClickableWord -> Html Msg 
