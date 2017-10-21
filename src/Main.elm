@@ -7,6 +7,7 @@ import List.Extra as Lex exposing (..)
 import Random.Extra as Rex exposing (..)
 import Random exposing (..)
 import Debug exposing (crash)
+import Loop exposing (..)
 
 
 
@@ -116,7 +117,25 @@ update msg model =
             ({model | textEntered = False}, Cmd.none)
 
         Randomize -> 
-            model ! [ ]
+            ((randomErasure model), Cmd.none)
+
+desiredAmountErased: Model -> Int 
+desiredAmountErased model = (totalNumberOfWords model) * model.percentRandom // 100 -- Note use of integer division here 
+
+currentErasedWords: Model -> List ClickableWord 
+currentErasedWords model = List.filter (.erased) model.clickableText
+
+currentAmountErased: Model -> Int 
+currentAmountErased model = List.length (currentErasedWords model) 
+
+totalNumberOfWords: Model -> Int 
+totalNumberOfWords model = List.length model.clickableText 
+
+randomIndex: Model -> Int
+randomIndex model = randomIndexAndSeed model |> Tuple.first
+
+newSeed: Model -> Random.Seed 
+newSeed model = randomIndexAndSeed model |> Tuple.second
 
 randomErasure: Model -> Model
 randomErasure model = 
@@ -127,54 +146,62 @@ randomErasure model =
         percent: Int
         percent = model.percentRandom
 
-        desiredAmountErased: Int 
-        desiredAmountErased = (List.length words) * percent // 100 -- Note use of integer division here 
+        desired: Int
+        desired = desiredAmountErased model
 
-        currentErasedWords: List ClickableWord 
-        currentErasedWords = List.filter (.erased) words
+        current: Int
+        current = currentAmountErased model
 
-        currentAmountErased: Int 
-        currentAmountErased = List.length currentErasedWords
-
-        totalNumberOfWords: Int 
-        totalNumberOfWords = List.length words 
-
-        randomIndex_: Int
-        randomIndex_ = randomIndexAndSeed model |> Tuple.first
+        newModel = model
 
     in 
-        case (compare desiredAmountErased currentAmountErased) of 
-            LT -> 
-                let 
-                    eraseAWord = eraseAtIndex randomIndex_ words
-                in 
-                    case eraseAWord of 
-                        Just newWords -> 
-                            { model | clickableText = newWords }
-                        _ -> 
-                            model --DEBUG?
-            EQ -> 
-                model
-            GT -> 
-                let 
-                    bringBackAWord = eraseAtIndex randomIndex_ words
-                in 
-                    case bringBackAWord of 
-                        Just newWords -> 
-                            { model | clickableText = newWords }
-                        _ -> 
-                            model --DEBUG?
+        if (current < desired) then
+            randomErasure (eraseAWord model)
+        else if (current == desired) then 
+            model
+        else  
+            randomErasure (bringBackAWord model)
+
+eraseAWord: Model -> Model 
+eraseAWord model =
+    let 
+        erasedWord = eraseAtIndex (randomIndex model) model.clickableText
+    in 
+        case erasedWord of 
+            Just newWords -> 
+                { model | 
+                    clickableText = newWords, 
+                    seed = (newSeed model)
+                }
+            _ -> 
+                { model | seed = (newSeed model) } --DEBUG?) 
+
+
+bringBackAWord: Model -> Model
+bringBackAWord model = 
+            let 
+                broughtBackWord = bringBackAtIndex (randomIndex model)  model.clickableText
+            in 
+                case broughtBackWord of 
+                    Just newWords -> 
+                        { model | 
+                            clickableText = newWords, 
+                            seed = (newSeed model)
+                        }
+                    _ -> 
+                        { model | seed = (newSeed model) } --DEBUG?
+
 
 randomIndexAndSeed: Model -> (Int, Seed) 
 randomIndexAndSeed model = 
     let 
-        totalNumberOfWords: Int 
-        totalNumberOfWords = List.length model.clickableText
+        total: Int 
+        total = totalNumberOfWords model
 
         seed: Random.Seed
         seed = model.seed
     in 
-        Random.step (Random.int 0 (totalNumberOfWords-1)) seed
+        Random.step (Random.int 0 ((totalNumberOfWords model)-1)) seed
 
 eraseAtIndex: Int -> List ClickableWord -> Maybe (List ClickableWord)
 eraseAtIndex index words = 
@@ -252,7 +279,8 @@ view model =
                     , Html.br [] []
                     , Html.button (onClick GoBackToTextEntry :: appButtonStyle) [Html.text "Enter different text"]
                     , Html.br [] []
-                    , Html.text <| toString <| (randomErasure model)
+                    , Html.button ( onClick (Randomize) :: appButtonStyle) [Html.text "Randomize!"]
+                    
 
                 ] 
 
@@ -281,7 +309,7 @@ enterYourTextScreen model =
             ] []
         , Html.br [] [] , Html.br [] [] 
         , Html.button ( onClick (MakeTextClickable model.inputText) :: appButtonStyle) [Html.text "Let's erase stuff!"]
-        , Html.button ( onClick (Randomize) :: appButtonStyle) [Html.text "Randomize!"]
+
         ]
 
 

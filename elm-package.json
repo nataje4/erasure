@@ -8,6 +8,7 @@
     ],
     "exposed-modules": [],
     "dependencies": {
+        "Chadtech/elm-loop": "1.0.2 <= v < 2.0.0",
         "elm-community/list-extra": "6.1.0 <= v < 7.0.0",
         "elm-community/random-extra": "2.0.0 <= v < 3.0.0",
         "elm-lang/core": "5.0.0 <= v < 6.0.0",
